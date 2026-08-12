@@ -1,0 +1,397 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Repostería Manu — Gestión de Pedidos</title>
+    <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <span class="logo-icon">🎂</span>
+            <div class="brand-text">
+                <h2>Repostería Manu</h2>
+                <span>Gestión de Pedidos</span>
+            </div>
+        </div>
+
+        <button class="nav-item active" data-section="dashboard" onclick="navigate('dashboard')">
+            <span class="nav-icon">🏠</span> Dashboard
+        </button>
+        <button class="nav-item" data-section="customers" onclick="navigate('customers')">
+            <span class="nav-icon">👥</span> Clientes
+        </button>
+        <button class="nav-item" data-section="products" onclick="navigate('products')">
+            <span class="nav-icon">🎂</span> Productos
+        </button>
+        <button class="nav-item" data-section="orders" onclick="navigate('orders')">
+            <span class="nav-icon">📋</span> Pedidos
+        </button>
+        <button class="nav-item" data-section="decorations" onclick="navigate('decorations')">
+            <span class="nav-icon">🌸</span> Decoraciones
+        </button>
+    </aside>
+
+    <!-- ===== MAIN ===== -->
+    <div class="main">
+
+        <!-- Topbar -->
+        <div class="topbar">
+            <div class="topbar-title">
+                <h1 id="page-title">Dashboard</h1>
+                <p id="page-subtitle">Resumen general de la repostería</p>
+            </div>
+            <div class="topbar-actions" id="topbar-actions"></div>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+
+            <!-- ===== DASHBOARD ===== -->
+            <section id="dashboard" class="section active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-number" id="stat-customers">—</div>
+                        <div class="stat-label">Clientes</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🎂</div>
+                        <div class="stat-number" id="stat-products">—</div>
+                        <div class="stat-label">Productos</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📋</div>
+                        <div class="stat-number" id="stat-orders">—</div>
+                        <div class="stat-label">Pedidos</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⏳</div>
+                        <div class="stat-number" id="stat-pending">—</div>
+                        <div class="stat-label">Pendientes</div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <!-- Recent orders table -->
+                    <div class="table-card">
+                        <div class="table-header">
+                            <h3>Pedidos Recientes</h3>
+                            <button class="btn-secondary" onclick="navigate('orders')">Ver todos</button>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Cliente</th>
+                                    <th>Entrega</th>
+                                    <th>Estado</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-orders-body">
+                                <tr><td colspan="5" class="loading">Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Status chart -->
+                    <div class="mini-card">
+                        <h4>Estado de Pedidos</h4>
+                        <div class="status-list">
+                            <div class="status-row">
+                                <span style="font-size:12px;color:#9d6b7a;width:70px">Pendiente</span>
+                                <div class="status-bar-wrap"><div class="status-bar pending" id="bar-pending" style="width:0%"></div></div>
+                                <span class="status-count" id="count-pending">0</span>
+                            </div>
+                            <div class="status-row">
+                                <span style="font-size:12px;color:#9d6b7a;width:70px">En Proceso</span>
+                                <div class="status-bar-wrap"><div class="status-bar process" id="bar-process" style="width:0%"></div></div>
+                                <span class="status-count" id="count-process">0</span>
+                            </div>
+                            <div class="status-row">
+                                <span style="font-size:12px;color:#9d6b7a;width:70px">Listo</span>
+                                <div class="status-bar-wrap"><div class="status-bar ready" id="bar-ready" style="width:0%"></div></div>
+                                <span class="status-count" id="count-ready">0</span>
+                            </div>
+                            <div class="status-row">
+                                <span style="font-size:12px;color:#9d6b7a;width:70px">Entregado</span>
+                                <div class="status-bar-wrap"><div class="status-bar delivered" id="bar-delivered" style="width:0%"></div></div>
+                                <span class="status-count" id="count-delivered">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== CUSTOMERS ===== -->
+            <section id="customers" class="section">
+                <div class="table-card">
+                    <div class="table-header">
+                        <h3>Clientes</h3>
+                        <div style="display:flex;gap:10px;align-items:center">
+                            <div class="search-box">
+                                <span>🔍</span>
+                                <input type="text" id="search-customers" placeholder="Buscar cliente..." oninput="searchTable('search-customers','customers-body')" />
+                            </div>
+                            <button class="btn-primary" onclick="openAddCustomer()">+ Nuevo</button>
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr><th>#</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Dirección</th><th>Acciones</th></tr>
+                        </thead>
+                        <tbody id="customers-body">
+                            <tr><td colspan="6" class="loading">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ===== PRODUCTS ===== -->
+            <section id="products" class="section">
+                <div class="table-card">
+                    <div class="table-header">
+                        <h3>Productos</h3>
+                        <div style="display:flex;gap:10px;align-items:center">
+                            <div class="search-box">
+                                <span>🔍</span>
+                                <input type="text" id="search-products" placeholder="Buscar producto..." oninput="searchTable('search-products','products-body')" />
+                            </div>
+                            <button class="btn-primary" onclick="openAddProduct()">+ Nuevo</button>
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr><th>#</th><th>Nombre</th><th>Sabor</th><th>Tamaño</th><th>Precio</th><th>Acciones</th></tr>
+                        </thead>
+                        <tbody id="products-body">
+                            <tr><td colspan="6" class="loading">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ===== ORDERS ===== -->
+            <section id="orders" class="section">
+                <div class="table-card">
+                    <div class="table-header">
+                        <h3>Pedidos</h3>
+                        <div style="display:flex;gap:10px;align-items:center">
+                            <div class="search-box">
+                                <span>🔍</span>
+                                <input type="text" id="search-orders" placeholder="Buscar pedido..." oninput="searchTable('search-orders','orders-body')" />
+                            </div>
+                            <button class="btn-primary" onclick="openAddOrder()">+ Nuevo</button>
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr><th>#</th><th>Cliente</th><th>Fecha Pedido</th><th>Entrega</th><th>Estado</th><th>Notas</th><th>Acciones</th></tr>
+                        </thead>
+                        <tbody id="orders-body">
+                            <tr><td colspan="7" class="loading">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ===== DECORATIONS ===== -->
+            <section id="decorations" class="section">
+                <div class="table-card">
+                    <div class="table-header">
+                        <h3>Decoraciones</h3>
+                        <div style="display:flex;gap:10px;align-items:center">
+                            <div class="search-box">
+                                <span>🔍</span>
+                                <input type="text" id="search-decorations" placeholder="Buscar decoración..." oninput="searchTable('search-decorations','decorations-body')" />
+                            </div>
+                            <button class="btn-primary" onclick="openAddDecoration()">+ Nueva</button>
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr><th>#</th><th>Tipo</th><th>Color</th><th>Mensaje</th><th>Pedido</th><th>Acciones</th></tr>
+                        </thead>
+                        <tbody id="decorations-body">
+                            <tr><td colspan="6" class="loading">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </div><!-- /content -->
+    </div><!-- /main -->
+    <!-- ===== MODAL: CUSTOMER ===== -->
+    <div class="modal-overlay" id="customer-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="customer-modal-title">Nuevo Cliente</h3>
+                <button class="modal-close" onclick="closeModal('customer-modal')">✕</button>
+            </div>
+            <form id="customer-form" onsubmit="return false">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nombre *</label>
+                        <input type="text" id="c-name" required placeholder="Ej. María" />
+                    </div>
+                    <div class="form-group">
+                        <label>Apellido *</label>
+                        <input type="text" id="c-lastname" required placeholder="Ej. García" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Email *</label>
+                    <input type="email" id="c-email" required placeholder="correo@ejemplo.com" />
+                </div>
+                <div class="form-group">
+                    <label>Teléfono</label>
+                    <input type="text" id="c-phone" placeholder="Ej. 809-555-1234" />
+                </div>
+                <div class="form-group">
+                    <label>Dirección</label>
+                    <input type="text" id="c-address" placeholder="Ej. Calle 5, Santo Domingo" />
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('customer-modal')">Cancelar</button>
+                <button class="btn-primary" onclick="saveCustomer()">💾 Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL: PRODUCT ===== -->
+    <div class="modal-overlay" id="product-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="product-modal-title">Nuevo Producto</h3>
+                <button class="modal-close" onclick="closeModal('product-modal')">✕</button>
+            </div>
+            <form id="product-form" onsubmit="return false">
+                <div class="form-group">
+                    <label>Nombre *</label>
+                    <input type="text" id="p-name" required placeholder="Ej. Torta de Chocolate" />
+                </div>
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <textarea id="p-description" placeholder="Descripción del producto..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Sabor</label>
+                        <input type="text" id="p-flavor" placeholder="Ej. Vainilla" />
+                    </div>
+                    <div class="form-group">
+                        <label>Tamaño</label>
+                        <input type="text" id="p-size" placeholder="Ej. 20 personas" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Precio (RD$) *</label>
+                    <input type="number" id="p-price" required min="0.01" step="0.01" placeholder="0.00" />
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('product-modal')">Cancelar</button>
+                <button class="btn-primary" onclick="saveProduct()">💾 Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL: ORDER ===== -->
+    <div class="modal-overlay" id="order-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="order-modal-title">Nuevo Pedido</h3>
+                <button class="modal-close" onclick="closeModal('order-modal')">✕</button>
+            </div>
+            <form id="order-form" onsubmit="return false">
+                <div class="form-group">
+                    <label>Cliente *</label>
+                    <select id="o-customer-id" required>
+                        <option value="">Seleccionar cliente...</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Fecha del Pedido *</label>
+                        <input type="date" id="o-order-date" required />
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha de Entrega *</label>
+                        <input type="date" id="o-delivery-date" required />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Estado *</label>
+                    <select id="o-status" required>
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="En Proceso">En Proceso</option>
+                        <option value="Listo">Listo</option>
+                        <option value="Entregado">Entregado</option>
+                        <option value="Cancelado">Cancelado</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Notas / Observaciones</label>
+                    <textarea id="o-notes" placeholder="Instrucciones especiales, alergias, etc."></textarea>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('order-modal')">Cancelar</button>
+                <button class="btn-primary" onclick="saveOrder()">💾 Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL: DECORATION ===== -->
+    <div class="modal-overlay" id="decoration-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="decoration-modal-title">Nueva Decoración</h3>
+                <button class="modal-close" onclick="closeModal('decoration-modal')">✕</button>
+            </div>
+            <form id="decoration-form" onsubmit="return false">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo *</label>
+                        <input type="text" id="d-type" required placeholder="Ej. Fondant" />
+                    </div>
+                    <div class="form-group">
+                        <label>Color</label>
+                        <input type="text" id="d-color" placeholder="Ej. Rosa pastel" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Mensaje</label>
+                    <input type="text" id="d-message" placeholder="Ej. ¡Feliz Cumpleaños Ana!" />
+                </div>
+                <div class="form-group">
+                    <label>Pedido *</label>
+                    <select id="d-order-id" required>
+                        <option value="">Seleccionar pedido...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Producto *</label>
+                    <select id="d-product-id" required>
+                        <option value="">Seleccionar producto...</option>
+                    </select>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('decoration-modal')">Cancelar</button>
+                <button class="btn-primary" onclick="saveDecoration()">💾 Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TOAST ===== -->
+    <div class="toast" id="toast"></div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

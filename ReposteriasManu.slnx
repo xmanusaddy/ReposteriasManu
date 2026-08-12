@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="ReposteriasManu.API/ReposteriasManu.API.csproj" />
+  <Project Path="ReposteriasManu.Application/ReposteriasManu.Application.csproj" />
+  <Project Path="ReposteriasManu.Domain/ReposteriasManu.Domain.csproj" />
+  <Project Path="ReposteriasManu.Infrastructure/ReposteriasManu.Infrastructure.csproj" />
+  <Project Path="ReposteriasManu.Web/ReposteriasManu.Web.csproj" Id="5bf2ed3d-63eb-4d96-96d5-2297f51ebfc4" />
+</Solution>
