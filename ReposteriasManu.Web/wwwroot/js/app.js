@@ -1,4 +1,6 @@
-const API = 'https://localhost:7255/api';
+const API = window.location.protocol === 'https:'
+  ? 'https://localhost:7255/api'
+  : 'http://localhost:5255/api';
 
 // ===== STATE =====
 let currentSection = 'dashboard';

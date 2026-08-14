@@ -2,11 +2,11 @@
   "profiles": {
     "ReposteriasManu.API": {
       "commandName": "Project",
-      "launchBrowser": true,
+      "launchBrowser": false,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
-      "applicationUrl": "https://localhost:52457;http://localhost:52458"
+      "applicationUrl": "http://localhost:5255"
     }
   }
 }
