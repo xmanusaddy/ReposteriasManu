@@ -1,5 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
 using Npgsql;
+using ReposteriasManu.API.Responses;
 using ReposteriasManu.Application.Contract;
 using ReposteriasManu.Application.Services;
 using ReposteriasManu.Infrastructure.Context;
@@ -18,6 +21,12 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.ReferenceHandler =
             System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
     });
+
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+        new BadRequestObjectResult(ApiErrorResponse.FromModelState(context.ModelState));
+});
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -69,6 +78,22 @@ if (isDatabaseConfigured)
 
 var app = builder.Build();
 
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+        var (statusCode, message) = GetSafeExceptionResponse(exception);
+
+        app.Logger.LogError(exception, "Unhandled exception while processing {Path}", context.Request.Path);
+
+        context.Response.StatusCode = statusCode;
+        context.Response.ContentType = "application/json";
+
+        await context.Response.WriteAsJsonAsync(new ApiErrorResponse(message));
+    });
+});
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -98,9 +123,10 @@ if (isDatabaseConfigured)
         }
         catch (Exception ex)
         {
-            return Results.Problem(
-                title: "Database connection failed",
-                detail: ex.GetBaseException().Message,
+            app.Logger.LogError(ex, "Database health check failed.");
+
+            return Results.Json(
+                new ApiErrorResponse("No se pudo conectar con la base de datos. Intente nuevamente."),
                 statusCode: StatusCodes.Status503ServiceUnavailable);
         }
         finally
@@ -111,9 +137,8 @@ if (isDatabaseConfigured)
 }
 else
 {
-    app.MapGet("/health/database", () => Results.Problem(
-        title: "Database connection is not configured",
-        detail: databaseConfigurationError,
+    app.MapGet("/health/database", () => Results.Json(
+        new ApiErrorResponse("La conexion con la base de datos no esta configurada."),
         statusCode: StatusCodes.Status503ServiceUnavailable));
 }
 
@@ -127,12 +152,8 @@ if (!isDatabaseConfigured)
         {
             context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
 
-            await context.Response.WriteAsJsonAsync(new
-            {
-                title = "Database connection is not configured",
-                detail = databaseConfigurationError,
-                requiredConfiguration = "ConnectionStrings:DefaultConnection"
-            });
+            await context.Response.WriteAsJsonAsync(
+                new ApiErrorResponse("La conexion con la base de datos no esta configurada."));
 
             return;
         }
@@ -202,4 +223,51 @@ static bool ConnectionStringContainsKey(string connectionString, string key)
         .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
         .Select(part => part.Split('=', 2)[0].Replace(" ", string.Empty, StringComparison.OrdinalIgnoreCase))
         .Any(partKey => string.Equals(partKey, normalizedKey, StringComparison.OrdinalIgnoreCase));
+}
+
+static (int StatusCode, string Message) GetSafeExceptionResponse(Exception? exception)
+{
+    if (exception is null)
+    {
+        return (StatusCodes.Status500InternalServerError, "No fue posible completar la operacion.");
+    }
+
+    if (exception is DbUpdateException dbUpdateException &&
+        dbUpdateException.GetBaseException() is PostgresException postgresException)
+    {
+        return postgresException.SqlState switch
+        {
+            PostgresErrorCodes.ForeignKeyViolation =>
+                (StatusCodes.Status400BadRequest,
+                    "No fue posible guardar el registro porque una relacion seleccionada no existe."),
+            PostgresErrorCodes.UniqueViolation =>
+                (StatusCodes.Status409Conflict,
+                    "No fue posible guardar el registro porque ya existe un dato con esa informacion."),
+            _ =>
+                (StatusCodes.Status409Conflict,
+                    "No fue posible guardar los cambios en la base de datos.")
+        };
+    }
+
+    if (IsDatabaseUnavailable(exception))
+    {
+        return (StatusCodes.Status503ServiceUnavailable,
+            "No se pudo conectar con la base de datos. Intente nuevamente.");
+    }
+
+    if (exception is DbUpdateException)
+    {
+        return (StatusCodes.Status409Conflict,
+            "No fue posible guardar los cambios en la base de datos.");
+    }
+
+    return (StatusCodes.Status500InternalServerError, "No fue posible completar la operacion.");
+}
+
+static bool IsDatabaseUnavailable(Exception exception)
+{
+    var baseException = exception.GetBaseException();
+
+    return exception is NpgsqlException or TimeoutException ||
+        baseException is NpgsqlException or TimeoutException;
 }
