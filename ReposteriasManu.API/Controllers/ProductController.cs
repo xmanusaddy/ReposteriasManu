@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ReposteriasManu.Application.Contract;
+using ReposteriasManu.API.Responses;
 using ReposteriasManu.Application.Dtos.Product;
 using ReposteriasManu.Domain.Entities;
 
@@ -28,7 +29,7 @@ namespace ReposteriasManu.API.Controllers
         {
             var product = await _service.GetByIdAsync(id);
             if (product == null)
-                return NotFound();
+                return NotFound(new ApiErrorResponse("Producto no encontrado."));
             return Ok(product);
         }
 
@@ -36,7 +37,7 @@ namespace ReposteriasManu.API.Controllers
         public async Task<IActionResult> Create([FromBody] ProductCreateDto dto)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                return BadRequest(ApiErrorResponse.FromModelState(ModelState));
 
             var product = new Product(dto.Name, dto.Description, dto.Price, dto.Flavor, dto.Size);
             await _service.AddAsync(product);
@@ -47,14 +48,14 @@ namespace ReposteriasManu.API.Controllers
         public async Task<IActionResult> Update(int id, [FromBody] ProductUpdateDto dto)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                return BadRequest(ApiErrorResponse.FromModelState(ModelState));
 
             if (id != dto.Id)
-                return BadRequest();
+                return BadRequest(new ApiErrorResponse("El identificador de la ruta no coincide con el producto enviado."));
 
             var product = await _service.GetByIdAsync(id);
             if (product == null)
-                return NotFound();
+                return NotFound(new ApiErrorResponse("Producto no encontrado."));
 
             product.Name = dto.Name;
             product.Description = dto.Description;
@@ -71,7 +72,7 @@ namespace ReposteriasManu.API.Controllers
         {
             var product = await _service.GetByIdAsync(id);
             if (product == null)
-                return NotFound();
+                return NotFound(new ApiErrorResponse("Producto no encontrado."));
 
             await _service.DeleteAsync(id);
             return NoContent();

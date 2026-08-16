@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ReposteriasManu.Application.Contract;
+using ReposteriasManu.API.Responses;
 using ReposteriasManu.Application.Dtos.Order;
 using ReposteriasManu.Domain.Entities;
 
@@ -28,7 +29,7 @@ namespace ReposteriasManu.API.Controllers
         {
             var order = await _service.GetByIdAsync(id);
             if (order == null)
-                return NotFound();
+                return NotFound(new ApiErrorResponse("Pedido no encontrado."));
             return Ok(order);
         }
 
@@ -50,7 +51,7 @@ namespace ReposteriasManu.API.Controllers
         public async Task<IActionResult> Create([FromBody] OrderCreateDto dto)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                return BadRequest(ApiErrorResponse.FromModelState(ModelState));
 
             var order = new Order(
                 DateTime.SpecifyKind(dto.OrderDate, DateTimeKind.Utc),
@@ -67,14 +68,14 @@ namespace ReposteriasManu.API.Controllers
         public async Task<IActionResult> Update(int id, [FromBody] OrderUpdateDto dto)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                return BadRequest(ApiErrorResponse.FromModelState(ModelState));
 
             if (id != dto.Id)
-                return BadRequest();
+                return BadRequest(new ApiErrorResponse("El identificador de la ruta no coincide con el pedido enviado."));
 
             var order = await _service.GetByIdAsync(id);
             if (order == null)
-                return NotFound();
+                return NotFound(new ApiErrorResponse("Pedido no encontrado."));
 
             order.OrderDate = DateTime.SpecifyKind(dto.OrderDate, DateTimeKind.Utc);
             order.DeliveryDate = DateTime.SpecifyKind(dto.DeliveryDate, DateTimeKind.Utc);
@@ -91,7 +92,7 @@ namespace ReposteriasManu.API.Controllers
         {
             var order = await _service.GetByIdAsync(id);
             if (order == null)
-                return NotFound();
+                return NotFound(new ApiErrorResponse("Pedido no encontrado."));
 
             await _service.DeleteAsync(id);
             return NoContent();
