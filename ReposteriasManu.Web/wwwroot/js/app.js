@@ -56,6 +56,18 @@ async function apiFetch(endpoint, options = {}) {
   }
 }
 
+function canSubmitForm(formId, event) {
+  if (event) event.preventDefault();
+
+  const form = document.getElementById(formId);
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return false;
+  }
+
+  return true;
+}
+
 // ===== DASHBOARD =====
 async function loadDashboard() {
   try {
@@ -166,7 +178,9 @@ async function openEditCustomer(id) {
   openModal('customer-modal');
 }
 
-async function saveCustomer() {
+async function saveCustomer(event) {
+  if (!canSubmitForm('customer-form', event)) return;
+
   const body = {
     name: document.getElementById('c-name').value,
     lastName: document.getElementById('c-lastname').value,
@@ -246,7 +260,9 @@ async function openEditProduct(id) {
   openModal('product-modal');
 }
 
-async function saveProduct() {
+async function saveProduct(event) {
+  if (!canSubmitForm('product-form', event)) return;
+
   const body = {
     name: document.getElementById('p-name').value,
     description: document.getElementById('p-description').value,
@@ -340,7 +356,9 @@ async function openEditOrder(id) {
   openModal('order-modal');
 }
 
-async function saveOrder() {
+async function saveOrder(event) {
+  if (!canSubmitForm('order-form', event)) return;
+
   const body = {
     customerId: parseInt(document.getElementById('o-customer-id').value),
     orderDate: document.getElementById('o-order-date').value,
@@ -438,7 +456,9 @@ async function openEditDecoration(id) {
   openModal('decoration-modal');
 }
 
-async function saveDecoration() {
+async function saveDecoration(event) {
+  if (!canSubmitForm('decoration-form', event)) return;
+
   const body = {
     type: document.getElementById('d-type').value,
     color: document.getElementById('d-color').value,
