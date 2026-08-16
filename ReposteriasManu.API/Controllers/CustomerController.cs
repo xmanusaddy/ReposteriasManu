@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ReposteriasManu.Application.Contract;
+using ReposteriasManu.API.Responses;
 using ReposteriasManu.Application.Dtos.Customer;
 using ReposteriasManu.Domain.Entities;
 
@@ -28,7 +29,7 @@ namespace ReposteriasManu.API.Controllers
         {
             var customer = await _service.GetByIdAsync(id);
             if (customer == null)
-                return NotFound();
+                return NotFound(new ApiErrorResponse("Cliente no encontrado."));
             return Ok(customer);
         }
 
@@ -36,7 +37,7 @@ namespace ReposteriasManu.API.Controllers
         public async Task<IActionResult> Create([FromBody] CustomerCreateDto dto)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                return BadRequest(ApiErrorResponse.FromModelState(ModelState));
 
             var customer = new Customer(dto.Name, dto.LastName, dto.Phone, dto.Email, dto.Address);
             await _service.AddAsync(customer);
@@ -47,14 +48,14 @@ namespace ReposteriasManu.API.Controllers
         public async Task<IActionResult> Update(int id, [FromBody] CustomerUpdateDto dto)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                return BadRequest(ApiErrorResponse.FromModelState(ModelState));
 
             if (id != dto.Id)
-                return BadRequest();
+                return BadRequest(new ApiErrorResponse("El identificador de la ruta no coincide con el cliente enviado."));
 
             var customer = await _service.GetByIdAsync(id);
             if (customer == null)
-                return NotFound();
+                return NotFound(new ApiErrorResponse("Cliente no encontrado."));
 
             customer.Name = dto.Name;
             customer.LastName = dto.LastName;
@@ -71,7 +72,7 @@ namespace ReposteriasManu.API.Controllers
         {
             var customer = await _service.GetByIdAsync(id);
             if (customer == null)
-                return NotFound();
+                return NotFound(new ApiErrorResponse("Cliente no encontrado."));
 
             await _service.DeleteAsync(id);
             return NoContent();

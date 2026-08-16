@@ -1,4 +1,6 @@
-const API = 'https://localhost:7255/api';
+const API = window.location.protocol === 'https:'
+  ? 'https://localhost:7255/api'
+  : 'http://localhost:5255/api';
 
 // ===== STATE =====
 let currentSection = 'dashboard';
@@ -40,18 +42,80 @@ function showToast(msg, type = 'success') {
 
 // ===== API HELPERS =====
 async function apiFetch(endpoint, options = {}) {
+  let res;
+
   try {
-    const res = await fetch(`${API}${endpoint}`, {
+    res = await fetch(`${API}${endpoint}`, {
       headers: { 'Content-Type': 'application/json' },
       ...options
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    if (res.status === 204) return null;
-    return await res.json();
   } catch (e) {
     console.error(e);
-    throw e;
+    throw new Error('No se pudo conectar con la API. Verifique que el servidor este en ejecucion.');
   }
+
+  if (!res.ok) {
+    throw new Error(await getApiErrorMessage(res));
+  }
+
+  if (res.status === 204) return null;
+  return await res.json();
+}
+
+async function getApiErrorMessage(response) {
+  const fallback = getFallbackErrorMessage(response.status);
+
+  try {
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      return fallback;
+    }
+
+    const data = await response.json();
+    const message = data.message || data.title || fallback;
+    const validationDetails = getValidationErrorText(data.errors);
+
+    return validationDetails ? `${message} ${validationDetails}` : message;
+  } catch (e) {
+    console.error(e);
+    return fallback;
+  }
+}
+
+function getValidationErrorText(errors) {
+  if (!errors) return '';
+
+  const messages = Object.values(errors)
+    .flat()
+    .filter(Boolean);
+
+  return messages.length ? messages.slice(0, 3).join(' ') : '';
+}
+
+function getFallbackErrorMessage(status) {
+  if (status === 400) return 'Revise los datos enviados e intente nuevamente.';
+  if (status === 404) return 'No se encontro el registro solicitado.';
+  if (status === 409) return 'No fue posible guardar los cambios por un conflicto de datos.';
+  if (status === 503) return 'No se pudo conectar con la base de datos. Intente nuevamente.';
+
+  return 'No fue posible completar la operacion.';
+}
+
+function showApiError(error, fallbackMessage) {
+  console.error(error);
+  showToast(error?.message || fallbackMessage, 'error');
+}
+
+function canSubmitForm(formId, event) {
+  if (event) event.preventDefault();
+
+  const form = document.getElementById(formId);
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return false;
+  }
+
+  return true;
 }
 
 // ===== DASHBOARD =====
@@ -73,7 +137,7 @@ async function loadDashboard() {
 
     renderRecentOrders();
     renderStatusChart();
-  } catch { showToast('Error cargando el dashboard', 'error'); }
+  } catch (error) { showApiError(error, 'Error cargando el dashboard'); }
 }
 
 function renderRecentOrders() {
@@ -121,7 +185,7 @@ async function loadCustomers() {
   try {
     customers = await apiFetch('/customer');
     renderCustomers(customers);
-  } catch { showToast('Error cargando clientes', 'error'); }
+  } catch (error) { showApiError(error, 'Error cargando clientes'); }
 }
 
 function renderCustomers(data) {
@@ -164,7 +228,9 @@ async function openEditCustomer(id) {
   openModal('customer-modal');
 }
 
-async function saveCustomer() {
+async function saveCustomer(event) {
+  if (!canSubmitForm('customer-form', event)) return;
+
   const body = {
     name: document.getElementById('c-name').value,
     lastName: document.getElementById('c-lastname').value,
@@ -182,7 +248,7 @@ async function saveCustomer() {
     }
     closeModal('customer-modal');
     loadCustomers();
-  } catch { showToast('Error guardando cliente', 'error'); }
+  } catch (error) { showApiError(error, 'Error guardando cliente'); }
 }
 
 async function deleteCustomer(id) {
@@ -191,7 +257,7 @@ async function deleteCustomer(id) {
     await apiFetch(`/customer/${id}`, { method: 'DELETE' });
     showToast('Cliente eliminado');
     loadCustomers();
-  } catch { showToast('Error eliminando cliente', 'error'); }
+  } catch (error) { showApiError(error, 'Error eliminando cliente'); }
 }
 
 // ===== PRODUCTS =====
@@ -201,7 +267,7 @@ async function loadProducts() {
   try {
     products = await apiFetch('/product');
     renderProducts(products);
-  } catch { showToast('Error cargando productos', 'error'); }
+  } catch (error) { showApiError(error, 'Error cargando productos'); }
 }
 
 function renderProducts(data) {
@@ -244,7 +310,9 @@ async function openEditProduct(id) {
   openModal('product-modal');
 }
 
-async function saveProduct() {
+async function saveProduct(event) {
+  if (!canSubmitForm('product-form', event)) return;
+
   const body = {
     name: document.getElementById('p-name').value,
     description: document.getElementById('p-description').value,
@@ -262,7 +330,7 @@ async function saveProduct() {
     }
     closeModal('product-modal');
     loadProducts();
-  } catch { showToast('Error guardando producto', 'error'); }
+  } catch (error) { showApiError(error, 'Error guardando producto'); }
 }
 
 async function deleteProduct(id) {
@@ -271,7 +339,7 @@ async function deleteProduct(id) {
     await apiFetch(`/product/${id}`, { method: 'DELETE' });
     showToast('Producto eliminado');
     loadProducts();
-  } catch { showToast('Error eliminando producto', 'error'); }
+  } catch (error) { showApiError(error, 'Error eliminando producto'); }
 }
 
 // ===== ORDERS =====
@@ -282,7 +350,7 @@ async function loadOrders() {
     [orders, customers] = await Promise.all([apiFetch('/order'), apiFetch('/customer')]);
     renderOrders(orders);
     populateCustomerSelect('o-customer-id');
-  } catch { showToast('Error cargando pedidos', 'error'); }
+  } catch (error) { showApiError(error, 'Error cargando pedidos'); }
 }
 
 function renderOrders(data) {
@@ -338,7 +406,9 @@ async function openEditOrder(id) {
   openModal('order-modal');
 }
 
-async function saveOrder() {
+async function saveOrder(event) {
+  if (!canSubmitForm('order-form', event)) return;
+
   const body = {
     customerId: parseInt(document.getElementById('o-customer-id').value),
     orderDate: document.getElementById('o-order-date').value,
@@ -356,7 +426,7 @@ async function saveOrder() {
     }
     closeModal('order-modal');
     loadOrders();
-  } catch { showToast('Error guardando pedido', 'error'); }
+  } catch (error) { showApiError(error, 'Error guardando pedido'); }
 }
 
 async function deleteOrder(id) {
@@ -365,7 +435,7 @@ async function deleteOrder(id) {
     await apiFetch(`/order/${id}`, { method: 'DELETE' });
     showToast('Pedido eliminado');
     loadOrders();
-  } catch { showToast('Error eliminando pedido', 'error'); }
+  } catch (error) { showApiError(error, 'Error eliminando pedido'); }
 }
 
 // ===== DECORATIONS =====
@@ -381,7 +451,7 @@ async function loadDecorations() {
     renderDecorations(decorations);
     populateOrderSelect('d-order-id');
     populateProductSelect('d-product-id');
-  } catch { showToast('Error cargando decoraciones', 'error'); }
+  } catch (error) { showApiError(error, 'Error cargando decoraciones'); }
 }
 
 function renderDecorations(data) {
@@ -436,7 +506,9 @@ async function openEditDecoration(id) {
   openModal('decoration-modal');
 }
 
-async function saveDecoration() {
+async function saveDecoration(event) {
+  if (!canSubmitForm('decoration-form', event)) return;
+
   const body = {
     type: document.getElementById('d-type').value,
     color: document.getElementById('d-color').value,
@@ -454,7 +526,7 @@ async function saveDecoration() {
     }
     closeModal('decoration-modal');
     loadDecorations();
-  } catch { showToast('Error guardando decoración', 'error'); }
+  } catch (error) { showApiError(error, 'Error guardando decoración'); }
 }
 
 async function deleteDecoration(id) {
@@ -463,7 +535,7 @@ async function deleteDecoration(id) {
     await apiFetch(`/decoration/${id}`, { method: 'DELETE' });
     showToast('Decoración eliminada');
     loadDecorations();
-  } catch { showToast('Error eliminando decoración', 'error'); }
+  } catch (error) { showApiError(error, 'Error eliminando decoración'); }
 }
 
 // ===== SEARCH =====

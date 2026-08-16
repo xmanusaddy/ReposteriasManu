@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ReposteriasManu.Application.Contract;
+using ReposteriasManu.API.Responses;
 using ReposteriasManu.Application.Dtos.Decoration;
 using ReposteriasManu.Domain.Entities;
 
@@ -28,7 +29,7 @@ namespace ReposteriasManu.API.Controllers
         {
             var decoration = await _service.GetByIdAsync(id);
             if (decoration == null)
-                return NotFound();
+                return NotFound(new ApiErrorResponse("Decoracion no encontrada."));
             return Ok(decoration);
         }
 
@@ -43,7 +44,7 @@ namespace ReposteriasManu.API.Controllers
         public async Task<IActionResult> Create([FromBody] DecorationCreateDto dto)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                return BadRequest(ApiErrorResponse.FromModelState(ModelState));
 
             var decoration = new Decoration(dto.Type, dto.Color, dto.Message, dto.OrderId, dto.ProductId);
             await _service.AddAsync(decoration);
@@ -54,14 +55,14 @@ namespace ReposteriasManu.API.Controllers
         public async Task<IActionResult> Update(int id, [FromBody] DecorationUpdateDto dto)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                return BadRequest(ApiErrorResponse.FromModelState(ModelState));
 
             if (id != dto.Id)
-                return BadRequest();
+                return BadRequest(new ApiErrorResponse("El identificador de la ruta no coincide con la decoracion enviada."));
 
             var decoration = await _service.GetByIdAsync(id);
             if (decoration == null)
-                return NotFound();
+                return NotFound(new ApiErrorResponse("Decoracion no encontrada."));
 
             decoration.Type = dto.Type;
             decoration.Color = dto.Color;
@@ -78,7 +79,7 @@ namespace ReposteriasManu.API.Controllers
         {
             var decoration = await _service.GetByIdAsync(id);
             if (decoration == null)
-                return NotFound();
+                return NotFound(new ApiErrorResponse("Decoracion no encontrada."));
 
             await _service.DeleteAsync(id);
             return NoContent();
